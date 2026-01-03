@@ -30,28 +30,28 @@ class NewsFetcher:
         self.apify_api_key = self.settings.apify_api_key
 
     async def fetch_news(self, query: Optional[str] = None) -> list[dict]:
-        """Obtiene noticias usando NewsData.io, con fallback a Apify."""
+        """Obtiene noticias usando Apify como primario, NewsData.io como fallback."""
         articles = []
 
-        # Intentar con NewsData.io primero
-        if self.newsdata_api_key:
-            try:
-                articles = await self._fetch_from_newsdata(query)
-                if articles:
-                    logger.info(f"Obtenidas {len(articles)} noticias de NewsData.io")
-                    return articles
-            except Exception as e:
-                logger.error(f"Error en NewsData.io: {e}")
-
-        # Fallback a Apify si NewsData falla o no hay resultados
-        if self.apify_api_key and not articles:
+        # Intentar con Apify primero (más resultados, mejor para breaking news)
+        if self.apify_api_key:
             try:
                 articles = await self._fetch_from_apify(query)
                 if articles:
-                    logger.info(f"Obtenidas {len(articles)} noticias de Apify (fallback)")
+                    logger.info(f"Obtenidas {len(articles)} noticias de Apify")
                     return articles
             except Exception as e:
                 logger.error(f"Error en Apify: {e}")
+
+        # Fallback a NewsData.io si Apify falla
+        if self.newsdata_api_key and not articles:
+            try:
+                articles = await self._fetch_from_newsdata(query)
+                if articles:
+                    logger.info(f"Obtenidas {len(articles)} noticias de NewsData.io (fallback)")
+                    return articles
+            except Exception as e:
+                logger.error(f"Error en NewsData.io: {e}")
 
         return articles
 
