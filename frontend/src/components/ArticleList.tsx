@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Article, ArticleFilters } from '../types';
 import ArticleCard from './ArticleCard';
+import { AdPlaceholder } from './AdBanner';
 
 interface ArticleListProps {
   articles: Article[];
@@ -73,10 +74,18 @@ export default function ArticleList({
         </p>
       </div>
 
-      {/* Lista de artículos */}
+      {/* Lista de artículos con ads intercalados */}
       <div className="space-y-4 mb-8">
-        {articles.map((article) => (
-          <ArticleCard key={article.id} article={article} onEntityClick={onEntityClick} />
+        {articles.map((article, index) => (
+          <div key={article.id}>
+            <ArticleCard article={article} onEntityClick={onEntityClick} />
+            {/* Ad cada 3 artículos */}
+            {(index + 1) % 3 === 0 && index < articles.length - 1 && (
+              <div className="my-4">
+                <AdPlaceholder type="in-article" />
+              </div>
+            )}
+          </div>
         ))}
       </div>
 
