@@ -12,14 +12,16 @@ class NewsFetcher:
 
     NEWSDATA_BASE_URL = "https://newsdata.io/api/1/latest"
 
-    # Queries para Venezuela/LATAM
+    # Queries para Venezuela/LATAM - Breaking news
     DEFAULT_QUERIES = [
-        "Nicolás Maduro Venezuela",
-        "Venezuela Estados Unidos",
-        "María Corina Machado",
-        "Trump Venezuela",
-        "Venezuela crisis",
-        "Latinoamérica Venezuela",
+        "Venezuela Caracas explosiones",
+        "Maduro capturado detenido",
+        "Venezuela ataque militar",
+        "Trump Venezuela invasion",
+        "Venezuela ultimas noticias hoy",
+        "Caracas bombardeo",
+        "Venezuela EEUU conflicto",
+        "Maduro arrestado",
     ]
 
     def __init__(self):
