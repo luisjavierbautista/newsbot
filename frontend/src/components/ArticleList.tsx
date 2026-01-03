@@ -31,19 +31,20 @@ export default function ArticleList({
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="card p-5 animate-pulse">
-            <div className="flex gap-4">
-              <div className="w-64 h-40 bg-dark-700 rounded-lg" />
-              <div className="flex-1 space-y-3">
-                <div className="h-4 bg-dark-700 rounded w-1/4" />
-                <div className="h-6 bg-dark-700 rounded w-3/4" />
-                <div className="h-4 bg-dark-700 rounded w-full" />
-                <div className="h-4 bg-dark-700 rounded w-2/3" />
+          <div key={i} className="card p-3 sm:p-5 animate-pulse">
+            <div className="flex gap-3 sm:gap-4">
+              {/* Imagen - oculta en móvil, más pequeña en tablet */}
+              <div className="hidden sm:block w-32 md:w-48 lg:w-64 h-24 md:h-32 lg:h-40 bg-dark-700 rounded-lg flex-shrink-0" />
+              <div className="flex-1 space-y-2 sm:space-y-3">
+                <div className="h-3 sm:h-4 bg-dark-700 rounded w-1/3 sm:w-1/4" />
+                <div className="h-5 sm:h-6 bg-dark-700 rounded w-full sm:w-3/4" />
+                <div className="h-3 sm:h-4 bg-dark-700 rounded w-full" />
+                <div className="hidden sm:block h-4 bg-dark-700 rounded w-2/3" />
                 <div className="flex gap-2">
-                  <div className="h-6 bg-dark-700 rounded w-20" />
-                  <div className="h-6 bg-dark-700 rounded w-16" />
+                  <div className="h-5 sm:h-6 bg-dark-700 rounded w-16 sm:w-20" />
+                  <div className="h-5 sm:h-6 bg-dark-700 rounded w-14 sm:w-16" />
                 </div>
               </div>
             </div>
