@@ -11,7 +11,7 @@ function App() {
 
       {/* Top Banner Ad */}
       <div className="container mx-auto px-4 py-4">
-        <AdPlaceholder type="banner" className="mx-auto" />
+        <AdPlaceholder type="banner" className="mx-auto max-w-3xl" />
       </div>
 
       <main className="container mx-auto px-4 py-4 flex-1">
@@ -37,7 +37,7 @@ function App() {
       {/* Footer */}
       <footer className="bg-dark-900 border-t border-dark-700 py-8 mt-8">
         <div className="container mx-auto px-4">
-          <AdPlaceholder type="footer" className="mb-6 mx-auto" />
+          <AdPlaceholder type="footer" className="mb-6 mx-auto max-w-3xl" />
           <div className="text-center text-gray-500 text-sm">
             <p className="font-medium text-gray-400">LatBot<span className="text-primary-500">.news</span></p>
             <p className="mt-1">Noticias LATAM con Inteligencia Artificial</p>

@@ -56,21 +56,48 @@ interface AdPlaceholderProps {
 }
 
 export function AdPlaceholder({ type, className = '' }: AdPlaceholderProps) {
-  const sizes: Record<string, { width: string; height: string; label: string }> = {
-    banner: { width: '100%', height: '90px', label: 'Banner Ad (728x90)' },
-    sidebar: { width: '300px', height: '250px', label: 'Sidebar Ad (300x250)' },
-    'in-article': { width: '100%', height: '250px', label: 'In-Article Ad' },
-    footer: { width: '100%', height: '90px', label: 'Footer Ad (728x90)' },
+  const config: Record<string, { minHeight: string; label: string; cta: string }> = {
+    banner: {
+      minHeight: '90px',
+      label: 'Espacio Publicitario',
+      cta: 'Anuncie aqui y llegue a miles de lectores'
+    },
+    sidebar: {
+      minHeight: '250px',
+      label: 'Publicidad',
+      cta: 'Promocione su marca aqui'
+    },
+    'in-article': {
+      minHeight: '120px',
+      label: 'Espacio Publicitario',
+      cta: 'Anuncie en LatBot.news'
+    },
+    footer: {
+      minHeight: '90px',
+      label: 'Espacio Publicitario',
+      cta: 'Contactenos para anunciar'
+    },
   };
 
-  const size = sizes[type];
+  const { minHeight, label, cta } = config[type];
 
   return (
-    <div
-      className={`flex items-center justify-center bg-dark-800 border border-dashed border-dark-600 rounded-lg text-gray-500 text-sm ${className}`}
-      style={{ width: size.width, height: size.height }}
+    <a
+      href="mailto:publicidad@latbot.news?subject=Consulta%20sobre%20publicidad%20en%20LatBot.news"
+      className={`block w-full ${className}`}
     >
-      <span>{size.label}</span>
-    </div>
+      <div
+        className="flex flex-col items-center justify-center bg-gradient-to-r from-dark-800 to-dark-850 border border-dashed border-primary-600/30 rounded-lg text-center p-4 hover:border-primary-500/50 hover:bg-dark-750 transition-all cursor-pointer group"
+        style={{ minHeight }}
+      >
+        <span className="text-primary-400 font-medium text-sm sm:text-base">{label}</span>
+        <span className="text-gray-400 text-xs sm:text-sm mt-1 group-hover:text-primary-300 transition-colors">
+          {cta}
+        </span>
+        <span className="text-primary-500 text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          publicidad@latbot.news
+        </span>
+      </div>
+    </a>
   );
 }
