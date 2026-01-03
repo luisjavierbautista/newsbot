@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { adsConfig } from '../config/ads';
 
 declare global {
   interface Window {
@@ -41,7 +42,7 @@ export default function AdBanner({
         ref={adRef}
         className="adsbygoogle"
         style={{ display: 'block' }}
-        data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+        data-ad-client={adsConfig.publisherId}
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? 'true' : 'false'}
