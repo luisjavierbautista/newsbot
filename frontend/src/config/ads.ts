@@ -10,7 +10,7 @@ export const analyticsConfig = {
 export const adsConfig = {
   // Google AdSense
   // Registrate en: https://www.google.com/adsense/
-  publisherId: 'ca-pub-XXXXXXXXXXXXXXXX', // Tu ID de publisher
+  publisherId: 'ca-pub-1493654482685437',
 
   // Slots de anuncios (obtener de AdSense dashboard)
   slots: {
