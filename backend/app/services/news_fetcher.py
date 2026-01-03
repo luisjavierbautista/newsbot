@@ -128,11 +128,11 @@ class NewsFetcher:
         run_input = {
             "query": query or "Venezuela Maduro",
             "language": "es",
-            "maxItems": 50,
+            "maxItems": 100,
         }
 
         try:
-            run = client.actor("lhotanova/google-news-scraper").call(run_input=run_input)
+            run = client.actor("easyapi/google-news-scraper").call(run_input=run_input)
             items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
             return self._normalize_apify_articles(items)
         except Exception as e:
