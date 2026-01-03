@@ -193,6 +193,57 @@ async def trigger_fetch():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/analyze-pending")
+async def analyze_pending_articles(db: Session = Depends(get_db)):
+    """Analiza artículos que no tienen análisis."""
+    from app.services.gemini_analyzer import GeminiAnalyzer
+    from app.models import ArticleAnalysis, Entity
+    from datetime import datetime
+
+    analyzer = GeminiAnalyzer()
+
+    # Obtener artículos sin análisis
+    pending = db.query(Article).filter(
+        ~Article.id.in_(
+            db.query(ArticleAnalysis.article_id)
+        )
+    ).limit(10).all()
+
+    analyzed = 0
+    for article in pending:
+        result = await analyzer.analyze_article(
+            title=article.title,
+            source=article.source_name,
+            content=article.content or article.description
+        )
+
+        if result:
+            analysis = ArticleAnalysis(
+                article_id=article.id,
+                political_bias=result.political_bias,
+                bias_confidence=result.bias_confidence,
+                tone=result.tone,
+                tone_confidence=result.tone_confidence,
+                summary_ai=result.summary,
+                analyzed_at=datetime.utcnow(),
+            )
+            db.add(analysis)
+
+            for entity_data in result.entities:
+                entity = Entity(
+                    article_id=article.id,
+                    entity_type=entity_data.get("type", "unknown"),
+                    entity_value=entity_data.get("value", ""),
+                    relevance=float(entity_data.get("relevance", 1.0)),
+                )
+                db.add(entity)
+
+            analyzed += 1
+
+    db.commit()
+    return {"status": "success", "analyzed": analyzed, "pending": len(pending)}
+
+
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""

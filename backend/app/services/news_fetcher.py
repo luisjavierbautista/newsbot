@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class NewsFetcher:
     """Servicio para obtener noticias de NewsData.io con fallback a Apify."""
 
-    NEWSDATA_BASE_URL = "https://newsdata.io/api/1/news"
+    NEWSDATA_BASE_URL = "https://newsdata.io/api/1/latest"
 
     # Queries para Venezuela/LATAM
     DEFAULT_QUERIES = [
@@ -74,10 +74,10 @@ class NewsFetcher:
 
     async def _fetch_from_newsdata(self, query: Optional[str] = None) -> list[dict]:
         """Obtiene noticias de NewsData.io API."""
+        # Usar solo parámetros soportados en el tier gratuito
         params = {
             "apikey": self.newsdata_api_key,
             "language": "es",
-            "country": "ve,ar,co,mx,pe,cl,ec,us",
         }
 
         if query:
@@ -87,7 +87,12 @@ class NewsFetcher:
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(self.NEWSDATA_BASE_URL, params=params)
-            response.raise_for_status()
+
+            # Log response for debugging
+            if response.status_code != 200:
+                logger.error(f"NewsData.io response: {response.status_code} - {response.text[:500]}")
+                response.raise_for_status()
+
             data = response.json()
 
             if data.get("status") != "success":

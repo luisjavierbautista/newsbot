@@ -60,7 +60,7 @@ Responde SOLO con el JSON, sin texto adicional."""
         self.settings = get_settings()
         if self.settings.gemini_api_key:
             genai.configure(api_key=self.settings.gemini_api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
             logger.warning("Gemini API key not configured")
