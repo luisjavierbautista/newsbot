@@ -47,8 +47,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="NewsBot LATAM",
-    description="Portal de noticias LATAM/USA con análisis de IA",
+    title="LatBot News",
+    description="Portal de noticias LATAM/USA con análisis de IA - latbot.news",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -69,8 +69,8 @@ app.include_router(router)
 @app.get("/")
 async def root():
     return {
-        "name": "NewsBot LATAM",
+        "name": "LatBot News",
         "version": "1.0.0",
-        "description": "Portal de noticias LATAM/USA con análisis de IA",
+        "description": "Portal de noticias LATAM/USA con análisis de IA - latbot.news",
         "docs": "/docs"
     }

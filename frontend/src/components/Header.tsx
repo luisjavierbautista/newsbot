@@ -29,8 +29,8 @@ export default function Header() {
               <Newspaper className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">NewsBot LATAM</h1>
-              <p className="text-xs text-gray-400">Noticias con Análisis IA</p>
+              <h1 className="text-xl font-bold text-white">LatBot<span className="text-primary-400">.news</span></h1>
+              <p className="text-xs text-gray-400">Noticias LATAM con IA</p>
             </div>
           </Link>
 

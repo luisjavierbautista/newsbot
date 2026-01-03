@@ -59,7 +59,7 @@ export default function Home() {
           Noticias LATAM y USA
         </h1>
         <p className="text-gray-400">
-          Análisis en tiempo real con inteligencia artificial. Sesgo político, tono y entidades extraídas automáticamente.
+          Análisis en tiempo real con inteligencia artificial en <span className="text-primary-400 font-medium">LatBot.news</span>. Sesgo político, tono y entidades extraídas automáticamente.
         </p>
       </div>
 

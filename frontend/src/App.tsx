@@ -39,8 +39,8 @@ function App() {
         <div className="container mx-auto px-4">
           <AdPlaceholder type="footer" className="mb-6 mx-auto" />
           <div className="text-center text-gray-500 text-sm">
-            <p>NewsBot LATAM - Noticias con Analisis IA</p>
-            <p className="mt-1">Powered by NewsData.io + Gemini AI</p>
+            <p className="font-medium text-gray-400">LatBot<span className="text-primary-500">.news</span></p>
+            <p className="mt-1">Noticias LATAM con Inteligencia Artificial</p>
           </div>
         </div>
       </footer>

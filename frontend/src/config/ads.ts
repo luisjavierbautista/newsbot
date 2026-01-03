@@ -4,7 +4,7 @@
 export const analyticsConfig = {
   // Plausible Analytics
   // Registrate en: https://plausible.io/
-  plausibleDomain: 'YOUR_DOMAIN', // ej: 'newsbot-latam.com'
+  plausibleDomain: 'latbot.news',
 };
 
 export const adsConfig = {
