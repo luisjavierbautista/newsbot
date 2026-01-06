@@ -25,6 +25,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { articlesApi, Fact, KeyFigure, TimelineEvent } from '../services/api';
+import SEO from '../components/SEO';
 
 // Category icons and colors
 const categoryConfig: Record<string, { icon: typeof Zap; color: string; label: string }> = {
@@ -267,6 +268,7 @@ export default function Facts() {
 
   return (
     <div className="min-h-screen pb-6 sm:pb-8 overflow-x-hidden">
+      <SEO page="facts" />
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-xl sm:rounded-2xl mb-6 sm:mb-8 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-dark-800 via-dark-900 to-dark-800 border border-dark-700">
         {/* Animated background */}

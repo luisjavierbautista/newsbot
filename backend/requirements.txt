@@ -20,7 +20,8 @@ aiohttp==3.9.3
 apscheduler==3.10.4
 
 # AI
-google-generativeai==0.4.0
+google-generativeai>=0.8.0
+google-genai>=1.0.0
 
 # Apify (fallback)
 apify-client==1.6.4
@@ -28,3 +29,6 @@ apify-client==1.6.4
 # Utils
 python-dotenv==1.0.1
 uuid7==0.1.0
+
+# Image generation
+Pillow==10.2.0

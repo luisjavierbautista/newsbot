@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import { articlesApi } from '../services/api';
 import { biasLabels, toneLabels } from '../types';
 import EntityTags from '../components/EntityTags';
+import SEO from '../components/SEO';
 
 // Parse UTC date string properly
 const parseUTCDate = (dateString: string): Date => {
@@ -88,6 +89,11 @@ export default function ArticlePage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <SEO
+        page="article"
+        title={`${article.title} - LatBot News`}
+        description={article.description || article.analysis?.summary_ai || undefined}
+      />
       {/* Botón volver */}
       <Link
         to="/"

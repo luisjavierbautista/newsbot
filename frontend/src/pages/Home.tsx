@@ -6,6 +6,7 @@ import { articlesApi } from '../services/api';
 import type { ArticleFilters } from '../types';
 import Filters from '../components/Filters';
 import ArticleList from '../components/ArticleList';
+import SEO from '../components/SEO';
 
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,6 +52,7 @@ export default function Home() {
 
   return (
     <div>
+      <SEO page="home" />
       {/* Banner principal */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">

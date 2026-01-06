@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { articlesApi } from '../services/api';
 import { biasLabels, toneLabels, entityTypeLabels } from '../types';
 import MediaBiasSpectrum from '../components/MediaBiasSpectrum';
+import SEO from '../components/SEO';
 
 export default function Stats() {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ export default function Stats() {
 
   return (
     <div className="min-h-screen pb-8">
+      <SEO page="sources" />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">

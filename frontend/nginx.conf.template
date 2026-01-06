@@ -24,8 +24,34 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # Internal location for prerendering (proxies to backend)
+    location @prerender {
+        proxy_pass ${BACKEND_URL}/api/prerender$request_uri;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # SPA routing - serve index.html for all non-file routes
     location / {
+        # Detect social media crawlers and route to prerender
+        set $prerender 0;
+        if ($http_user_agent ~* "twitterbot|facebookexternalhit|linkedinbot|slackbot|whatsapp|Discordbot|TelegramBot|pinterest") {
+            set $prerender 1;
+        }
+
+        # Don't prerender for static files (already handled by location below)
+        if ($uri ~* "\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$") {
+            set $prerender 0;
+        }
+
+        if ($prerender = 1) {
+            error_page 418 = @prerender;
+            return 418;
+        }
+
         try_files $uri $uri/ /index.html;
     }
 

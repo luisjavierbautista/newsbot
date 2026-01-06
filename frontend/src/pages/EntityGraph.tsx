@@ -5,6 +5,7 @@ import { Network, Filter, ZoomIn, ZoomOut, Maximize2, X, Loader2, ExternalLink, 
 import { articlesApi, EntityGraphData, EntityGraphNode } from '../services/api';
 import { entityTypeLabels } from '../types';
 import type { Article } from '../types';
+import SEO from '../components/SEO';
 
 const entityTypeColors: Record<string, string> = {
   person: '#f87171',      // red
@@ -221,6 +222,7 @@ export default function EntityGraph() {
 
   return (
     <div className="min-h-screen pb-8">
+      <SEO page="entities" />
       {/* Header */}
       <div className="mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
