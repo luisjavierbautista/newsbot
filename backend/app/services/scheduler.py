@@ -233,7 +233,7 @@ class NewsScheduler:
 
         db = SessionLocal()
         try:
-            await fact_extractor.update_all_caches(db)
+            await fact_extractor.update_default_cache(db)
         except Exception as e:
             logger.error(f"Error en job de facts cache: {e}")
         finally:

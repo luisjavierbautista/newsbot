@@ -506,57 +506,67 @@ async def get_source_stats(
 
 @router.get("/facts")
 async def get_facts(
-    hours: int = Query(24, ge=1, le=168, description="Hours to look back"),
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    refresh: bool = Query(False, description="Force refresh cache"),
     db: Session = Depends(get_db)
 ):
     """
-    Return cached facts from recent news articles.
-    Facts are pre-computed every 2 hours by background job.
-    Returns cached results for fast response.
+    Return facts from news articles within a date range.
+    Uses cache for fast response, refreshes if cache is stale.
     """
     from app.services.fact_extractor import fact_extractor
+    from datetime import date, timedelta
 
-    # Try to get cached facts
-    cached = fact_extractor.get_cached_facts(db, hours=hours)
+    # Parse dates
+    today = date.today()
+    try:
+        parsed_from = date.fromisoformat(date_from) if date_from else today - timedelta(days=1)
+        parsed_to = date.fromisoformat(date_to) if date_to else today
+    except ValueError:
+        return {"error": "Invalid date format. Use YYYY-MM-DD", "facts": []}
 
-    if cached:
-        return cached
+    # Try to get cached facts (unless refresh requested)
+    if not refresh:
+        cached = fact_extractor.get_cached_facts(db, date_from=parsed_from, date_to=parsed_to)
+        if cached:
+            return cached
 
-    # No cache available - return empty with message
-    # (Cache will be populated by background job)
-    return {
-        "facts": [],
-        "timeline_events": [],
-        "key_figures": [],
-        "article_count": 0,
-        "period_hours": hours,
-        "message": "Facts cache not yet available. Will be generated shortly.",
-        "cached": False
-    }
+    # No cache or refresh requested - generate fresh facts
+    result = await fact_extractor.update_facts_cache(db, date_from=parsed_from, date_to=parsed_to)
+    return result
 
 
 @router.post("/facts/refresh")
 async def refresh_facts_cache(
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     db: Session = Depends(get_db)
 ):
     """
-    Manually trigger facts cache refresh.
+    Manually trigger facts cache refresh for a date range.
     Use sparingly as it calls the AI API.
     """
-    from app.services.fact_extractor import fact_extractor, CACHE_PERIODS
+    from app.services.fact_extractor import fact_extractor
+    from datetime import date, timedelta
 
-    results = {}
-    for hours in CACHE_PERIODS:
-        result = await fact_extractor.update_facts_cache(db, hours=hours)
-        results[f"{hours}h"] = {
-            "facts_count": len(result.get("facts", [])),
-            "article_count": result.get("article_count", 0)
-        }
+    # Parse dates
+    today = date.today()
+    try:
+        parsed_from = date.fromisoformat(date_from) if date_from else today - timedelta(days=1)
+        parsed_to = date.fromisoformat(date_to) if date_to else today
+    except ValueError:
+        return {"error": "Invalid date format. Use YYYY-MM-DD"}
+
+    result = await fact_extractor.update_facts_cache(db, date_from=parsed_from, date_to=parsed_to)
 
     return {
         "status": "success",
         "message": "Facts cache refreshed",
-        "results": results
+        "date_from": parsed_from.isoformat(),
+        "date_to": parsed_to.isoformat(),
+        "facts_count": len(result.get("facts", [])),
+        "article_count": result.get("article_count", 0)
     }
 
 

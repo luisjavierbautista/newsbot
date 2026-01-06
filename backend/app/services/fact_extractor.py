@@ -2,7 +2,7 @@ import json
 import logging
 import hashlib
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import google.generativeai as genai
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -10,9 +10,6 @@ from app.config import get_settings
 from app.models import Article, ArticleAnalysis, FactsCache
 
 logger = logging.getLogger(__name__)
-
-# Standard periods to cache
-CACHE_PERIODS = [24, 48, 72]
 
 
 class FactExtractor:
@@ -78,19 +75,26 @@ Máximo 10 hechos principales, ordenados por importancia."""
     async def extract_facts(
         self,
         db: Session,
-        hours: int = 24,
-        limit: int = 30,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
         topic: Optional[str] = None
     ) -> dict:
-        """Extract facts from recent articles."""
+        """Extract facts from articles within a date range."""
         if not self.model:
             return {"error": "Gemini not configured", "facts": []}
 
-        # Get recent articles with analysis
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
-        query = db.query(Article).join(ArticleAnalysis).filter(
-            Article.published_at >= cutoff
-        )
+        # Default to last 24 hours if no dates provided
+        if not date_from and not date_to:
+            cutoff = datetime.utcnow() - timedelta(hours=24)
+            query = db.query(Article).join(ArticleAnalysis).filter(
+                Article.published_at >= cutoff
+            )
+        else:
+            query = db.query(Article).join(ArticleAnalysis)
+            if date_from:
+                query = query.filter(Article.published_at >= datetime.combine(date_from, datetime.min.time()))
+            if date_to:
+                query = query.filter(Article.published_at <= datetime.combine(date_to, datetime.max.time()))
 
         if topic:
             query = query.filter(
@@ -98,7 +102,8 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 (Article.description.ilike(f"%{topic}%"))
             )
 
-        articles = query.order_by(desc(Article.published_at)).limit(limit).all()
+        # Get ALL articles (no limit) - we'll batch process them
+        articles = query.order_by(desc(Article.published_at)).all()
 
         if not articles:
             return {
@@ -106,13 +111,17 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "timeline_events": [],
                 "key_figures": [],
                 "article_count": 0,
-                "period_hours": hours
+                "date_from": date_from.isoformat() if date_from else None,
+                "date_to": date_to.isoformat() if date_to else None,
             }
 
-        # Format articles for the prompt
+        # Format articles for the prompt - batch to avoid token limits
+        # Process up to 50 articles max (with truncated content)
+        max_articles = min(len(articles), 50)
         articles_text = ""
         article_map = {}
-        for i, article in enumerate(articles):
+
+        for i, article in enumerate(articles[:max_articles]):
             article_map[i] = {
                 "id": str(article.id),
                 "title": article.title,
@@ -123,8 +132,9 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "tone": article.analysis.tone if article.analysis else None,
             }
             content = article.content or article.description or ""
-            # Truncate content to avoid token limits
-            content = content[:1500] if len(content) > 1500 else content
+            # Truncate content more aggressively for large batches
+            max_content = 800 if len(articles) > 30 else 1500
+            content = content[:max_content] if len(content) > max_content else content
             articles_text += f"\n[Artículo {i}] - {article.source_name}\nTítulo: {article.title}\nContenido: {content}\n"
 
         prompt = self.EXTRACT_PROMPT.format(articles=articles_text)
@@ -180,7 +190,9 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "timeline_events": result.get("timeline_events", []),
                 "key_figures": result.get("key_figures", []),
                 "article_count": len(articles),
-                "period_hours": hours,
+                "articles_processed": max_articles,
+                "date_from": date_from.isoformat() if date_from else None,
+                "date_to": date_to.isoformat() if date_to else None,
                 "generated_at": datetime.utcnow().isoformat()
             }
 
@@ -192,12 +204,25 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "timeline_events": [],
                 "key_figures": [],
                 "article_count": len(articles),
-                "period_hours": hours
+                "date_from": date_from.isoformat() if date_from else None,
+                "date_to": date_to.isoformat() if date_to else None,
             }
 
-    def get_cached_facts(self, db: Session, hours: int = 24) -> Optional[dict]:
+    def get_cached_facts(
+        self,
+        db: Session,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None
+    ) -> Optional[dict]:
         """Get cached facts from database."""
-        period_key = str(hours)
+        # Generate cache key from date range
+        today = date.today()
+        if not date_from:
+            date_from = today - timedelta(days=1)
+        if not date_to:
+            date_to = today
+
+        period_key = f"{date_from.isoformat()}_{date_to.isoformat()}"
 
         cache = db.query(FactsCache).filter(
             FactsCache.period_hours == period_key
@@ -206,36 +231,52 @@ Máximo 10 hechos principales, ordenados por importancia."""
         if not cache:
             return None
 
+        # Check if cache is stale (older than 2 hours)
+        if datetime.utcnow() - cache.generated_at > timedelta(hours=2):
+            return None
+
         try:
             data = json.loads(cache.facts_json)
             data["generated_at"] = cache.generated_at.isoformat()
             data["article_count"] = int(cache.article_count)
-            data["period_hours"] = hours
+            data["date_from"] = date_from.isoformat()
+            data["date_to"] = date_to.isoformat()
             data["cached"] = True
             return data
         except Exception as e:
             logger.error(f"Error parsing cached facts: {e}")
             return None
 
-    async def update_facts_cache(self, db: Session, hours: int = 24) -> dict:
-        """Extract facts and save to cache. Called by background scheduler."""
-        logger.info(f"Updating facts cache for {hours}h period...")
+    async def update_facts_cache(
+        self,
+        db: Session,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None
+    ) -> dict:
+        """Extract facts and save to cache."""
+        today = date.today()
+        if not date_from:
+            date_from = today - timedelta(days=1)
+        if not date_to:
+            date_to = today
+
+        logger.info(f"Updating facts cache for {date_from} to {date_to}...")
 
         # Extract fresh facts
-        result = await self.extract_facts(db, hours=hours, limit=30)
+        result = await self.extract_facts(db, date_from=date_from, date_to=date_to)
 
         if "error" in result:
             logger.error(f"Failed to extract facts: {result['error']}")
             return result
 
-        # Prepare JSON for storage (without generated_at as it's stored separately)
+        # Prepare JSON for storage
         cache_data = {
             "facts": result.get("facts", []),
             "timeline_events": result.get("timeline_events", []),
             "key_figures": result.get("key_figures", [])
         }
 
-        period_key = str(hours)
+        period_key = f"{date_from.isoformat()}_{date_to.isoformat()}"
 
         # Delete old cache for this period
         db.query(FactsCache).filter(FactsCache.period_hours == period_key).delete()
@@ -250,17 +291,18 @@ Máximo 10 hechos principales, ordenados por importancia."""
         db.add(cache)
         db.commit()
 
-        logger.info(f"Facts cache updated for {hours}h period: {len(result.get('facts', []))} facts")
+        logger.info(f"Facts cache updated for {date_from} to {date_to}: {len(result.get('facts', []))} facts")
         return result
 
-    async def update_all_caches(self, db: Session):
-        """Update cache for all standard periods. Called by scheduler every 2 hours."""
+    async def update_default_cache(self, db: Session):
+        """Update cache for default period (last 24h). Called by scheduler."""
         logger.info("Starting scheduled facts cache update...")
-        for hours in CACHE_PERIODS:
-            try:
-                await self.update_facts_cache(db, hours=hours)
-            except Exception as e:
-                logger.error(f"Error updating cache for {hours}h: {e}")
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+        try:
+            await self.update_facts_cache(db, date_from=yesterday, date_to=today)
+        except Exception as e:
+            logger.error(f"Error updating default facts cache: {e}")
         logger.info("Scheduled facts cache update completed")
 
 

@@ -222,13 +222,25 @@ function Timeline({ events }: { events: TimelineEvent[] }) {
 }
 
 export default function Facts() {
+  // Helper to format date as YYYY-MM-DD
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
+  // Helper to get date N days ago
+  const getDaysAgo = (days: number): string => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return formatDate(date);
+  };
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [hours, setHours] = useState(24);
+  const [dateFrom, setDateFrom] = useState(getDaysAgo(1)); // Yesterday
+  const [dateTo, setDateTo] = useState(formatDate(new Date())); // Today
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['facts', hours],
-    queryFn: () => articlesApi.getFacts({ hours }),
+    queryKey: ['facts', dateFrom, dateTo],
+    queryFn: () => articlesApi.getFacts({ date_from: dateFrom, date_to: dateTo }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -293,19 +305,29 @@ export default function Facts() {
             <span className="hidden sm:inline"> Cada hecho muestra cuantas fuentes lo confirman.</span>
           </p>
 
-          {/* Controls */}
+          {/* Date Range Controls */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <select
-              value={hours}
-              onChange={(e) => setHours(Number(e.target.value))}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg sm:rounded-xl text-white text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
-            >
-              <option value={6}>6 horas</option>
-              <option value={12}>12 horas</option>
-              <option value={24}>24 horas</option>
-              <option value={48}>48 horas</option>
-              <option value={72}>72 horas</option>
-            </select>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400">Desde:</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                max={dateTo}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400">Hasta:</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                min={dateFrom}
+                max={formatDate(new Date())}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+              />
+            </div>
 
             <button
               onClick={() => refetch()}

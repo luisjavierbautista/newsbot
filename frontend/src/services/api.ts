@@ -85,12 +85,14 @@ export const articlesApi = {
   },
 
   getFacts: async (params: {
-    hours?: number;
-    topic?: string;
+    date_from?: string;
+    date_to?: string;
+    refresh?: boolean;
   } = {}): Promise<FactsResponse> => {
     const searchParams = new URLSearchParams();
-    if (params.hours) searchParams.append('hours', params.hours.toString());
-    if (params.topic) searchParams.append('topic', params.topic);
+    if (params.date_from) searchParams.append('date_from', params.date_from);
+    if (params.date_to) searchParams.append('date_to', params.date_to);
+    if (params.refresh) searchParams.append('refresh', 'true');
 
     const response = await api.get<FactsResponse>(`/facts?${searchParams.toString()}`);
     return response.data;
@@ -178,8 +180,11 @@ export interface FactsResponse {
   timeline_events: TimelineEvent[];
   key_figures: KeyFigure[];
   article_count: number;
-  period_hours: number;
+  articles_processed?: number;
+  date_from?: string;
+  date_to?: string;
   generated_at?: string;
+  cached?: boolean;
   error?: string;
 }
 
