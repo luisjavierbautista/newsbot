@@ -103,12 +103,15 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 (Article.description.ilike(f"%{topic}%"))
             )
 
-        # Get articles with optional limit
+        # Get articles with optional limit (max 200 to avoid timeouts)
         query = query.order_by(desc(Article.published_at))
+        max_limit = 200  # Hard cap to prevent timeouts
         if limit and limit > 0:
-            articles = query.limit(limit).all()
+            effective_limit = min(limit, max_limit)
+            articles = query.limit(effective_limit).all()
         else:
-            articles = query.all()
+            # "All" still capped at max_limit for safety
+            articles = query.limit(max_limit).all()
 
         if not articles:
             return {

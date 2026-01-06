@@ -237,7 +237,7 @@ export default function Facts() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dateFrom, setDateFrom] = useState(getDaysAgo(1)); // Yesterday
   const [dateTo, setDateTo] = useState(formatDate(new Date())); // Today
-  const [articleLimit, setArticleLimit] = useState<number>(0); // 0 = all
+  const [articleLimit, setArticleLimit] = useState<number>(100); // Default to 100
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -343,8 +343,7 @@ export default function Facts() {
               >
                 <option value={50}>50</option>
                 <option value={100}>100</option>
-                <option value={500}>500</option>
-                <option value={0}>Todas</option>
+                <option value={200}>200 (max)</option>
               </select>
             </div>
 
