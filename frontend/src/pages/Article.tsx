@@ -7,6 +7,15 @@ import { articlesApi } from '../services/api';
 import { biasLabels, toneLabels } from '../types';
 import EntityTags from '../components/EntityTags';
 
+// Parse UTC date string properly
+const parseUTCDate = (dateString: string): Date => {
+  // If the date string doesn't have timezone info, treat it as UTC
+  if (!dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-', 10)) {
+    return new Date(dateString + 'Z');
+  }
+  return new Date(dateString);
+};
+
 export default function ArticlePage() {
   const { id } = useParams<{ id: string }>();
 
@@ -48,17 +57,33 @@ export default function ArticlePage() {
   }
 
   const publishedDate = article.published_at
-    ? format(new Date(article.published_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
+    ? format(parseUTCDate(article.published_at), "d 'de' MMMM 'de' yyyy, HH:mm", { locale: es })
     : 'Fecha desconocida';
+
+  // Explicit mappings to prevent Tailwind from purging dynamic classes
+  const biasClasses: Record<string, string> = {
+    'left': 'badge-bias-left',
+    'center-left': 'badge-bias-center-left',
+    'center': 'badge-bias-center',
+    'center-right': 'badge-bias-center-right',
+    'right': 'badge-bias-right',
+  };
+
+  const toneClasses: Record<string, string> = {
+    'positive': 'badge-tone-positive',
+    'neutral': 'badge-tone-neutral',
+    'negative': 'badge-tone-negative',
+    'alarming': 'badge-tone-alarming',
+  };
 
   const getBiasClass = (bias: string | null) => {
     if (!bias) return 'badge-bias-center';
-    return `badge-bias-${bias}`;
+    return biasClasses[bias] || 'badge-bias-center';
   };
 
   const getToneClass = (tone: string | null) => {
     if (!tone) return 'badge-tone-neutral';
-    return `badge-tone-${tone}`;
+    return toneClasses[tone] || 'badge-tone-neutral';
   };
 
   return (

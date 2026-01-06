@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Newspaper, RefreshCw, BarChart3 } from 'lucide-react';
+import { Newspaper, RefreshCw, BarChart3, Network, Sparkles } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { articlesApi } from '../services/api';
 import { useState } from 'react';
@@ -34,13 +34,32 @@ export default function Header() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
-              to="/?view=stats"
+              to="/facts"
               className="flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              title="Hechos del Momento"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span className="hidden md:inline">Hechos</span>
+            </Link>
+
+            <Link
+              to="/graph"
+              className="flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              title="Grafo de Entidades"
+            >
+              <Network className="w-5 h-5" />
+              <span className="hidden md:inline">Grafo</span>
+            </Link>
+
+            <Link
+              to="/stats"
+              className="flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+              title="Estadísticas"
             >
               <BarChart3 className="w-5 h-5" />
-              <span className="hidden sm:inline">Estadísticas</span>
+              <span className="hidden md:inline">Stats</span>
             </Link>
 
             <button

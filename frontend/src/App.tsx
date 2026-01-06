@@ -2,11 +2,14 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import ArticlePage from './pages/Article';
+import EntityGraph from './pages/EntityGraph';
+import Stats from './pages/Stats';
+import Facts from './pages/Facts';
 import { AdPlaceholder } from './components/AdBanner';
 
 function App() {
   return (
-    <div className="min-h-screen bg-dark-950 flex flex-col">
+    <div className="min-h-screen bg-dark-950 flex flex-col overflow-x-hidden">
       <Header />
 
       {/* Top Banner Ad */}
@@ -14,13 +17,16 @@ function App() {
         <AdPlaceholder type="banner" className="mx-auto max-w-3xl" />
       </div>
 
-      <main className="container mx-auto px-4 py-4 flex-1">
+      <main className="container mx-auto px-4 py-4 flex-1 overflow-x-hidden">
         <div className="flex gap-6">
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/article/:id" element={<ArticlePage />} />
+              <Route path="/stats" element={<Stats />} />
+              <Route path="/graph" element={<EntityGraph />} />
+              <Route path="/facts" element={<Facts />} />
             </Routes>
           </div>
 

@@ -101,8 +101,22 @@ Responde SOLO con el JSON, sin texto adicional."""
                     result_text = result_text[4:]
                 result_text = result_text.strip()
 
+            # Extraer JSON si hay texto extra
+            if not result_text.startswith("{"):
+                start = result_text.find("{")
+                if start != -1:
+                    result_text = result_text[start:]
+            if not result_text.endswith("}"):
+                end = result_text.rfind("}")
+                if end != -1:
+                    result_text = result_text[:end + 1]
+
             # Parsear JSON
-            result_json = json.loads(result_text)
+            result_json = self._parse_json_safe(result_text)
+
+            if not result_json:
+                logger.warning(f"Could not parse Gemini response, using defaults")
+                return None
 
             return GeminiAnalysisResult(
                 political_bias=result_json.get("political_bias", "center"),
@@ -113,13 +127,38 @@ Responde SOLO con el JSON, sin texto adicional."""
                 entities=result_json.get("entities", [])
             )
 
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parsing Gemini response: {e}")
-            logger.debug(f"Raw response: {response.text if response else 'None'}")
-            return None
         except Exception as e:
             logger.error(f"Error analyzing article with Gemini: {e}")
             return None
+
+    def _parse_json_safe(self, text: str) -> Optional[dict]:
+        """Intenta parsear JSON con varios métodos de limpieza."""
+        import re
+
+        # Intento 1: directo
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
+
+        # Intento 2: limpiar caracteres problemáticos
+        try:
+            # Remover trailing commas antes de } o ]
+            cleaned = re.sub(r',\s*([}\]])', r'\1', text)
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # Intento 3: escapar comillas dentro de strings
+        try:
+            # Reemplazar comillas dobles no escapadas dentro de valores
+            cleaned = re.sub(r'(?<!\\)"(?=[^:,\[\]{}]*[,}\]])', '\\"', text)
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        logger.error(f"Failed to parse JSON after all attempts: {text[:200]}...")
+        return None
 
     async def analyze_batch(
         self,

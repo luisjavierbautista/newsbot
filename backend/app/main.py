@@ -28,16 +28,9 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info("Base de datos inicializada")
 
-    # Iniciar scheduler
+    # Iniciar scheduler (fetch cada 10 min, sin fetch inicial)
     news_scheduler.start()
     logger.info("Scheduler iniciado")
-
-    # Ejecutar fetch inicial
-    logger.info("Ejecutando fetch inicial de noticias...")
-    try:
-        await news_scheduler.run_now()
-    except Exception as e:
-        logger.error(f"Error en fetch inicial: {e}")
 
     yield
 

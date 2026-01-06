@@ -107,3 +107,10 @@ export const toneColors: Record<string, string> = {
   'negative': 'bg-red-500',
   'alarming': 'bg-yellow-500',
 };
+
+export const languageLabels: Record<string, { label: string; flag: string }> = {
+  'es': { label: 'Español', flag: '🇪🇸' },
+  'en': { label: 'English', flag: '🇺🇸' },
+  'pt': { label: 'Português', flag: '🇧🇷' },
+  'fr': { label: 'Français', flag: '🇫🇷' },
+};

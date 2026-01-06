@@ -57,6 +57,130 @@ export const articlesApi = {
     const response = await api.post<{ status: string; message: string }>('/fetch-now');
     return response.data;
   },
+
+  getEntityGraph: async (params: {
+    entity_type?: string;
+    min_connections?: number;
+    limit?: number;
+  } = {}): Promise<EntityGraphData> => {
+    const searchParams = new URLSearchParams();
+    if (params.entity_type) searchParams.append('entity_type', params.entity_type);
+    if (params.min_connections) searchParams.append('min_connections', params.min_connections.toString());
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+
+    const response = await api.get<EntityGraphData>(`/entity-graph?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  getSourceStats: async (params: {
+    limit?: number;
+    min_articles?: number;
+  } = {}): Promise<SourceStatsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params.limit) searchParams.append('limit', params.limit.toString());
+    if (params.min_articles) searchParams.append('min_articles', params.min_articles.toString());
+
+    const response = await api.get<SourceStatsResponse>(`/stats/sources?${searchParams.toString()}`);
+    return response.data;
+  },
+
+  getFacts: async (params: {
+    hours?: number;
+    topic?: string;
+  } = {}): Promise<FactsResponse> => {
+    const searchParams = new URLSearchParams();
+    if (params.hours) searchParams.append('hours', params.hours.toString());
+    if (params.topic) searchParams.append('topic', params.topic);
+
+    const response = await api.get<FactsResponse>(`/facts?${searchParams.toString()}`);
+    return response.data;
+  },
 };
+
+export interface EntityGraphNode {
+  id: string;
+  label: string;
+  type: string;
+  count: number;
+  articles: string[];
+}
+
+export interface EntityGraphLink {
+  source: string;
+  target: string;
+  value: number;
+  articles: string[];
+}
+
+export interface EntityGraphData {
+  nodes: EntityGraphNode[];
+  links: EntityGraphLink[];
+  total_entities: number;
+  total_connections: number;
+}
+
+export interface SourceStats {
+  source_name: string;
+  total_articles: number;
+  bias_score: number; // -2 (left) to +2 (right)
+  dominant_bias: string;
+  dominant_tone: string;
+  bias_distribution: Record<string, number>;
+  tone_distribution: Record<string, number>;
+}
+
+export interface SourceStatsResponse {
+  sources: SourceStats[];
+  total_sources: number;
+}
+
+export interface FactSource {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  published_at: string | null;
+  bias: string | null;
+  tone: string | null;
+}
+
+export interface Fact {
+  id: string;
+  fact: string;
+  category: 'evento' | 'declaracion' | 'dato' | 'decision' | 'conflicto' | 'acuerdo';
+  importance: 'alta' | 'media' | 'baja';
+  who: string[];
+  when: string | null;
+  where: string | null;
+  quote: string | null;
+  quote_author: string | null;
+  sources: FactSource[];
+  source_count: number;
+  verification: 'alto' | 'medio' | 'bajo';
+  sentiment: 'positivo' | 'negativo' | 'neutral' | 'alarmante';
+}
+
+export interface TimelineEvent {
+  date: string;
+  event: string;
+  fact_ids: string[];
+}
+
+export interface KeyFigure {
+  name: string;
+  role: string;
+  stance: string;
+  mentions: number;
+}
+
+export interface FactsResponse {
+  facts: Fact[];
+  timeline_events: TimelineEvent[];
+  key_figures: KeyFigure[];
+  article_count: number;
+  period_hours: number;
+  generated_at?: string;
+  error?: string;
+}
 
 export default api;
