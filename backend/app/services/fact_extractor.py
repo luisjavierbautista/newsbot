@@ -77,6 +77,7 @@ Máximo 10 hechos principales, ordenados por importancia."""
         db: Session,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        limit: Optional[int] = None,
         topic: Optional[str] = None
     ) -> dict:
         """Extract facts from articles within a date range."""
@@ -102,8 +103,12 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 (Article.description.ilike(f"%{topic}%"))
             )
 
-        # Get ALL articles (no limit) - we'll batch process them
-        articles = query.order_by(desc(Article.published_at)).all()
+        # Get articles with optional limit
+        query = query.order_by(desc(Article.published_at))
+        if limit and limit > 0:
+            articles = query.limit(limit).all()
+        else:
+            articles = query.all()
 
         if not articles:
             return {
@@ -115,13 +120,24 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "date_to": date_to.isoformat() if date_to else None,
             }
 
-        # Format articles for the prompt - batch to avoid token limits
-        # Process up to 50 articles max (with truncated content)
-        max_articles = min(len(articles), 50)
+        # Format articles for the prompt
+        # Adjust content truncation based on article count to stay within token limits
+        total_articles = len(articles)
         articles_text = ""
         article_map = {}
 
-        for i, article in enumerate(articles[:max_articles]):
+        # Calculate max content length based on article count
+        # Approximate: 100 articles * 500 chars = 50k chars, well within limits
+        if total_articles <= 50:
+            max_content = 1000
+        elif total_articles <= 100:
+            max_content = 600
+        elif total_articles <= 200:
+            max_content = 400
+        else:
+            max_content = 250  # Very brief for large batches
+
+        for i, article in enumerate(articles):
             article_map[i] = {
                 "id": str(article.id),
                 "title": article.title,
@@ -132,8 +148,6 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "tone": article.analysis.tone if article.analysis else None,
             }
             content = article.content or article.description or ""
-            # Truncate content more aggressively for large batches
-            max_content = 800 if len(articles) > 30 else 1500
             content = content[:max_content] if len(content) > max_content else content
             articles_text += f"\n[Artículo {i}] - {article.source_name}\nTítulo: {article.title}\nContenido: {content}\n"
 
@@ -189,8 +203,7 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 "facts": facts,
                 "timeline_events": result.get("timeline_events", []),
                 "key_figures": result.get("key_figures", []),
-                "article_count": len(articles),
-                "articles_processed": max_articles,
+                "article_count": total_articles,
                 "date_from": date_from.isoformat() if date_from else None,
                 "date_to": date_to.isoformat() if date_to else None,
                 "generated_at": datetime.utcnow().isoformat()
@@ -251,7 +264,8 @@ Máximo 10 hechos principales, ordenados por importancia."""
         self,
         db: Session,
         date_from: Optional[date] = None,
-        date_to: Optional[date] = None
+        date_to: Optional[date] = None,
+        limit: Optional[int] = None
     ) -> dict:
         """Extract facts and save to cache."""
         today = date.today()
@@ -260,10 +274,10 @@ Máximo 10 hechos principales, ordenados por importancia."""
         if not date_to:
             date_to = today
 
-        logger.info(f"Updating facts cache for {date_from} to {date_to}...")
+        logger.info(f"Updating facts cache for {date_from} to {date_to} (limit={limit})...")
 
         # Extract fresh facts
-        result = await self.extract_facts(db, date_from=date_from, date_to=date_to)
+        result = await self.extract_facts(db, date_from=date_from, date_to=date_to, limit=limit)
 
         if "error" in result:
             logger.error(f"Failed to extract facts: {result['error']}")

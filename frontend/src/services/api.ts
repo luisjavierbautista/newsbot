@@ -87,11 +87,13 @@ export const articlesApi = {
   getFacts: async (params: {
     date_from?: string;
     date_to?: string;
+    limit?: number;
     refresh?: boolean;
   } = {}): Promise<FactsResponse> => {
     const searchParams = new URLSearchParams();
     if (params.date_from) searchParams.append('date_from', params.date_from);
     if (params.date_to) searchParams.append('date_to', params.date_to);
+    if (params.limit !== undefined) searchParams.append('limit', params.limit.toString());
     if (params.refresh) searchParams.append('refresh', 'true');
 
     const response = await api.get<FactsResponse>(`/facts?${searchParams.toString()}`);

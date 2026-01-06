@@ -233,14 +233,20 @@ export default function Facts() {
     date.setDate(date.getDate() - days);
     return formatDate(date);
   };
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dateFrom, setDateFrom] = useState(getDaysAgo(1)); // Yesterday
   const [dateTo, setDateTo] = useState(formatDate(new Date())); // Today
+  const [articleLimit, setArticleLimit] = useState<number>(0); // 0 = all
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
-    queryKey: ['facts', dateFrom, dateTo],
-    queryFn: () => articlesApi.getFacts({ date_from: dateFrom, date_to: dateTo }),
+    queryKey: ['facts', dateFrom, dateTo, articleLimit],
+    queryFn: () => articlesApi.getFacts({
+      date_from: dateFrom,
+      date_to: dateTo,
+      limit: articleLimit
+    }),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -305,7 +311,7 @@ export default function Facts() {
             <span className="hidden sm:inline"> Cada hecho muestra cuantas fuentes lo confirman.</span>
           </p>
 
-          {/* Date Range Controls */}
+          {/* Date Range & Limit Controls */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2">
               <label className="text-xs text-gray-400">Desde:</label>
@@ -327,6 +333,19 @@ export default function Facts() {
                 max={formatDate(new Date())}
                 className="px-2 sm:px-3 py-1.5 sm:py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-400">Noticias:</label>
+              <select
+                value={articleLimit}
+                onChange={(e) => setArticleLimit(Number(e.target.value))}
+                className="px-2 sm:px-3 py-1.5 sm:py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={500}>500</option>
+                <option value={0}>Todas</option>
+              </select>
             </div>
 
             <button
