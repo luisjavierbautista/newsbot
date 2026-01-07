@@ -48,7 +48,7 @@ Solo incluye grupos donde hay AL MENOS 2 variantes."""
         self.settings = get_settings()
         if self.settings.gemini_api_key:
             genai.configure(api_key=self.settings.gemini_api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
             logger.warning("Gemini API key not configured")

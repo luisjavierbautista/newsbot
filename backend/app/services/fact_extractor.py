@@ -67,7 +67,7 @@ Máximo 10 hechos principales, ordenados por importancia."""
         self.settings = get_settings()
         if self.settings.gemini_api_key:
             genai.configure(api_key=self.settings.gemini_api_key)
-            self.model = genai.GenerativeModel('gemini-2.0-flash')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
         else:
             self.model = None
             logger.warning("Gemini API key not configured for FactExtractor")
@@ -103,14 +103,14 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 (Article.description.ilike(f"%{topic}%"))
             )
 
-        # Get articles with optional limit (max 200 to avoid timeouts)
+        # Get articles with optional limit (max 100 to avoid timeouts)
         query = query.order_by(desc(Article.published_at))
-        max_limit = 200  # Hard cap to prevent timeouts
+        max_limit = 100  # Hard cap to prevent timeouts
         if limit and limit > 0:
             effective_limit = min(limit, max_limit)
             articles = query.limit(effective_limit).all()
         else:
-            # "All" still capped at max_limit for safety
+            # Default to max_limit
             articles = query.limit(max_limit).all()
 
         if not articles:

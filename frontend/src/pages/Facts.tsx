@@ -237,7 +237,7 @@ export default function Facts() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [dateFrom, setDateFrom] = useState(getDaysAgo(1)); // Yesterday
   const [dateTo, setDateTo] = useState(formatDate(new Date())); // Today
-  const [articleLimit, setArticleLimit] = useState<number>(100); // Default to 100
+  const [articleLimit, setArticleLimit] = useState<number>(50); // Default to 50 for faster response
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
@@ -247,7 +247,8 @@ export default function Facts() {
       date_to: dateTo,
       limit: articleLimit
     }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes - facts don't change often
+    gcTime: 60 * 60 * 1000, // 1 hour cache
   });
 
   const facts = data?.facts || [];

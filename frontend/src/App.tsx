@@ -1,13 +1,27 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import ArticlePage from './pages/Article';
 import EntityGraph from './pages/EntityGraph';
 import Stats from './pages/Stats';
 import Facts from './pages/Facts';
+import FactsWidget from './pages/FactsWidget';
+import InstallPrompt from './components/InstallPrompt';
 import { AdPlaceholder } from './components/AdBanner';
 
 function App() {
+  const location = useLocation();
+
+  // Widget route gets its own standalone layout
+  if (location.pathname === '/widget') {
+    return (
+      <>
+        <FactsWidget />
+        <InstallPrompt />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-dark-950 flex flex-col overflow-x-hidden">
       <Header />
@@ -50,6 +64,9 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }

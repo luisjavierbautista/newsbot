@@ -87,7 +87,7 @@ class FactsCache(Base):
     __tablename__ = "facts_cache"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    period_hours = Column(String(10), nullable=False, default="24")  # e.g., "24", "48"
+    period_hours = Column(String(50), nullable=False, default="24")  # e.g., "24", "48" or "YYYY-MM-DD_YYYY-MM-DD"
     facts_json = Column(Text, nullable=False)  # JSON string with facts, timeline, key_figures
     article_count = Column(Float, default=0)
     generated_at = Column(DateTime, default=datetime.utcnow)

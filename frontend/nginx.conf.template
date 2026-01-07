@@ -4,9 +4,15 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # Mime types for static files
+    include /etc/nginx/mime.types;
+    types {
+        image/svg+xml svg svgz;
+    }
+
     # Gzip compression
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml;
 
     # API proxy
     location /api/ {
