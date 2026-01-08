@@ -84,14 +84,15 @@ Máximo 10 hechos principales, ordenados por importancia."""
         if not self.model:
             return {"error": "Gemini not configured", "facts": []}
 
-        # Default to last 24 hours if no dates provided
+        # Query ALL articles (no join required - we just need article content)
+        # Use outerjoin to include articles that may not have analysis yet
         if not date_from and not date_to:
             cutoff = datetime.utcnow() - timedelta(hours=24)
-            query = db.query(Article).join(ArticleAnalysis).filter(
+            query = db.query(Article).outerjoin(ArticleAnalysis).filter(
                 Article.published_at >= cutoff
             )
         else:
-            query = db.query(Article).join(ArticleAnalysis)
+            query = db.query(Article).outerjoin(ArticleAnalysis)
             if date_from:
                 query = query.filter(Article.published_at >= datetime.combine(date_from, datetime.min.time()))
             if date_to:
@@ -103,15 +104,14 @@ Máximo 10 hechos principales, ordenados por importancia."""
                 (Article.description.ilike(f"%{topic}%"))
             )
 
-        # Get articles with optional limit (max 100 to avoid timeouts)
+        # Get ALL articles for the period (no artificial limit)
+        # Gemini can handle large prompts, we'll truncate content appropriately
         query = query.order_by(desc(Article.published_at))
-        max_limit = 100  # Hard cap to prevent timeouts
         if limit and limit > 0:
-            effective_limit = min(limit, max_limit)
-            articles = query.limit(effective_limit).all()
+            articles = query.limit(limit).all()
         else:
-            # Default to max_limit
-            articles = query.limit(max_limit).all()
+            # No limit - get all articles in the period
+            articles = query.all()
 
         if not articles:
             return {
@@ -130,15 +130,22 @@ Máximo 10 hechos principales, ordenados por importancia."""
         article_map = {}
 
         # Calculate max content length based on article count
-        # Approximate: 100 articles * 500 chars = 50k chars, well within limits
+        # Gemini 2.5 Flash has ~1M token context, but we want to stay reasonable
+        # Target ~100k chars total for article content
         if total_articles <= 50:
             max_content = 1000
         elif total_articles <= 100:
             max_content = 600
         elif total_articles <= 200:
             max_content = 400
+        elif total_articles <= 500:
+            max_content = 200
+        elif total_articles <= 1000:
+            max_content = 100  # Title + brief snippet
         else:
-            max_content = 250  # Very brief for large batches
+            max_content = 50  # Just a tiny snippet for massive batches
+
+        logger.info(f"Processing {total_articles} articles with max_content={max_content} chars each")
 
         for i, article in enumerate(articles):
             article_map[i] = {
