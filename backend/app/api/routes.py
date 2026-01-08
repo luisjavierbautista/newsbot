@@ -508,13 +508,12 @@ async def get_source_stats(
 async def get_facts(
     date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    limit: Optional[int] = Query(None, description="Max articles to analyze (50, 100, 500, or 0 for all)"),
-    refresh: bool = Query(False, description="Force refresh cache"),
     db: Session = Depends(get_db)
 ):
     """
-    Return facts from news articles within a date range.
-    Uses cache for fast response, refreshes if cache is stale.
+    Return cached facts from news articles within a date range.
+    This endpoint ONLY returns cached data - it never triggers AI analysis.
+    AI analysis runs via background scheduler or admin endpoint.
     """
     from app.services.fact_extractor import fact_extractor
     from datetime import date, timedelta
@@ -527,19 +526,22 @@ async def get_facts(
     except ValueError:
         return {"error": "Invalid date format. Use YYYY-MM-DD", "facts": []}
 
-    # Convert limit=0 to None (meaning all)
-    parsed_limit = limit if limit and limit > 0 else None
+    # ONLY return cached facts - never trigger AI from user requests
+    cached = fact_extractor.get_cached_facts(db, date_from=parsed_from, date_to=parsed_to)
+    if cached:
+        return cached
 
-    # Try to get cached facts (unless refresh requested or custom limit)
-    # Only use cache for default requests (no custom limit)
-    if not refresh and parsed_limit is None:
-        cached = fact_extractor.get_cached_facts(db, date_from=parsed_from, date_to=parsed_to)
-        if cached:
-            return cached
-
-    # No cache or refresh requested - generate fresh facts
-    result = await fact_extractor.update_facts_cache(db, date_from=parsed_from, date_to=parsed_to, limit=parsed_limit)
-    return result
+    # No cache available - return empty result
+    return {
+        "facts": [],
+        "timeline_events": [],
+        "key_figures": [],
+        "article_count": 0,
+        "date_from": parsed_from.isoformat(),
+        "date_to": parsed_to.isoformat(),
+        "cached": False,
+        "message": "No hay datos en cache para este periodo. Los datos se actualizan automaticamente cada hora."
+    }
 
 
 @router.post("/facts/refresh")

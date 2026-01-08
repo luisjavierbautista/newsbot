@@ -247,9 +247,11 @@ Máximo 10 hechos principales, ordenados por importancia."""
         if not cache:
             return None
 
-        # Check if cache is stale (older than 2 hours)
-        if datetime.utcnow() - cache.generated_at > timedelta(hours=2):
-            return None
+        # Cache is valid for 4 hours (scheduler runs every 2 hours, so this gives buffer)
+        # We never return None for stale cache - always return cached data
+        # User requests should NEVER trigger AI analysis
+        cache_age_hours = (datetime.utcnow() - cache.generated_at).total_seconds() / 3600
+        is_stale = cache_age_hours > 4
 
         try:
             data = json.loads(cache.facts_json)
@@ -258,6 +260,8 @@ Máximo 10 hechos principales, ordenados por importancia."""
             data["date_from"] = date_from.isoformat()
             data["date_to"] = date_to.isoformat()
             data["cached"] = True
+            data["is_stale"] = is_stale  # Indicate if cache is older than 4 hours
+            data["cache_age_hours"] = round(cache_age_hours, 1)
             return data
         except Exception as e:
             logger.error(f"Error parsing cached facts: {e}")

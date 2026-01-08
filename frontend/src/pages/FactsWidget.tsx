@@ -108,7 +108,6 @@ export default function FactsWidget() {
     queryFn: () => articlesApi.getFacts({
       date_from: formatDate(yesterday),
       date_to: formatDate(today),
-      limit: 30 // Smaller limit for widget
     }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
