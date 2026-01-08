@@ -577,6 +577,69 @@ async def refresh_facts_cache(
     }
 
 
+@router.post("/facts/process-historical")
+async def process_historical_facts(
+    force_reprocess: bool = Query(False, description="Force reprocess all periods (even cached ones)"),
+    max_batches: Optional[int] = Query(None, description="Max number of weekly batches to process (for testing)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Process ALL historical articles to extract facts.
+    Articles are grouped by week and processed in batches.
+    Only processes weeks that haven't been cached yet (unless force_reprocess=True).
+
+    WARNING: This can be expensive as it makes many AI calls.
+    Use max_batches to limit the number of periods processed.
+
+    Example: /api/facts/process-historical?max_batches=5
+    """
+    from app.services.fact_extractor import fact_extractor
+
+    result = await fact_extractor.process_historical_facts(
+        db,
+        force_reprocess=force_reprocess,
+        max_batches=max_batches
+    )
+
+    return result
+
+
+@router.get("/facts/status")
+async def get_facts_cache_status(db: Session = Depends(get_db)):
+    """
+    Get status of facts cache - shows which periods have been processed.
+    """
+    from app.services.fact_extractor import fact_extractor
+
+    # Get article date range
+    min_date, max_date = fact_extractor.get_article_date_range(db)
+
+    if not min_date:
+        return {
+            "status": "no_articles",
+            "message": "No articles found in database"
+        }
+
+    # Get all periods
+    periods = fact_extractor.get_weekly_periods(min_date, max_date)
+    processed_periods = fact_extractor.get_processed_periods(db)
+
+    # Count stats
+    processed_count = len([p for p in periods if f"{p[0].isoformat()}_{p[1].isoformat()}" in processed_periods])
+
+    return {
+        "article_date_range": {
+            "from": min_date.isoformat(),
+            "to": max_date.isoformat()
+        },
+        "total_periods": len(periods),
+        "processed_periods": processed_count,
+        "pending_periods": len(periods) - processed_count,
+        "coverage_percent": round(processed_count / len(periods) * 100, 1) if periods else 0,
+        "cached_period_keys": list(processed_periods)[:20]  # Show first 20
+    }
+
+
 @router.get("/entities/analyze-duplicates")
 async def analyze_duplicate_entities(
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),

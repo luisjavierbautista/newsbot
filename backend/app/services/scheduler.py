@@ -233,7 +233,18 @@ class NewsScheduler:
 
         db = SessionLocal()
         try:
+            # Update default period (yesterday to today)
             await fact_extractor.update_default_cache(db)
+
+            # Also process any unprocessed weeks (max 2 per run to avoid long-running jobs)
+            result = await fact_extractor.process_historical_facts(
+                db,
+                force_reprocess=False,
+                max_batches=2
+            )
+            if result.get("newly_processed", 0) > 0:
+                logger.info(f"Processed {result['newly_processed']} historical periods")
+
         except Exception as e:
             logger.error(f"Error en job de facts cache: {e}")
         finally:
