@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import ArticlePage from './pages/Article';
@@ -6,6 +6,7 @@ import EntityGraph from './pages/EntityGraph';
 import Stats from './pages/Stats';
 import Facts from './pages/Facts';
 import FactsWidget from './pages/FactsWidget';
+import DataSources from './pages/DataSources';
 import InstallPrompt from './components/InstallPrompt';
 import { AdPlaceholder } from './components/AdBanner';
 
@@ -41,6 +42,7 @@ function App() {
               <Route path="/stats" element={<Stats />} />
               <Route path="/graph" element={<EntityGraph />} />
               <Route path="/facts" element={<Facts />} />
+              <Route path="/sources" element={<DataSources />} />
             </Routes>
           </div>
 
@@ -61,6 +63,12 @@ function App() {
           <div className="text-center text-gray-500 text-sm">
             <p className="font-medium text-gray-400">LatBot<span className="text-primary-500">.news</span></p>
             <p className="mt-1">Noticias LATAM con Inteligencia Artificial</p>
+            <Link
+              to="/sources"
+              className="inline-block mt-3 text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              Fuentes de Datos
+            </Link>
           </div>
         </div>
       </footer>
