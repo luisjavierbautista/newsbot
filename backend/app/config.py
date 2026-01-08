@@ -13,8 +13,11 @@ class Settings(BaseSettings):
     # Gemini AI
     gemini_api_key: str = ""
 
-    # Apify (fallback)
+    # Apify (primary)
     apify_api_key: str = ""
+
+    # GNews (secondary)
+    gnews_api_key: str = ""
 
     # App Config
     fetch_interval_minutes: int = 10

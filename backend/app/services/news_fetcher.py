@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 class NewsFetcher:
-    """Servicio para obtener noticias de NewsData.io con fallback a Apify."""
+    """Servicio para obtener noticias de múltiples fuentes: Apify, GNews, NewsData.io."""
 
     NEWSDATA_BASE_URL = "https://newsdata.io/api/1/latest"
+    GNEWS_BASE_URL = "https://gnews.io/api/v4/search"
 
     # Queries para Venezuela/LATAM - Breaking news
     DEFAULT_QUERIES = [
@@ -28,6 +29,7 @@ class NewsFetcher:
         self.settings = get_settings()
         self.newsdata_api_key = self.settings.newsdata_api_key
         self.apify_api_key = self.settings.apify_api_key
+        self.gnews_api_key = self.settings.gnews_api_key
         self.last_fetch_time: Optional[datetime] = None
 
     def set_last_fetch_time(self, last_time: Optional[datetime]):
@@ -37,11 +39,11 @@ class NewsFetcher:
             logger.info(f"Filtrando noticias posteriores a: {last_time}")
 
     async def fetch_news(self, query: Optional[str] = None) -> list[dict]:
-        """Obtiene noticias usando Apify como primario, NewsData.io como fallback."""
+        """Obtiene noticias: Apify (primario) -> GNews (secundario) -> NewsData.io (fallback)."""
         articles = []
-        apify_failed = False
+        source_failed = False
 
-        # Intentar con Apify primero (más resultados, mejor para breaking news)
+        # 1. Intentar con Apify primero (más resultados, mejor para breaking news)
         if self.apify_api_key:
             try:
                 articles = await self._fetch_from_apify(query)
@@ -50,13 +52,28 @@ class NewsFetcher:
                     return articles
                 else:
                     logger.warning(f"Apify retornó 0 resultados para query: {query}")
-                    apify_failed = True
+                    source_failed = True
             except Exception as e:
                 logger.error(f"Error en Apify: {e}")
-                apify_failed = True
+                source_failed = True
 
-        # Fallback a NewsData.io si Apify falla o no hay resultados
-        if self.newsdata_api_key and (apify_failed or not articles):
+        # 2. Intentar con GNews (secundario)
+        if self.gnews_api_key and (source_failed or not articles):
+            logger.info("Intentando con GNews...")
+            try:
+                articles = await self._fetch_from_gnews(query)
+                if articles:
+                    logger.info(f"Obtenidas {len(articles)} noticias de GNews")
+                    return articles
+                else:
+                    logger.warning(f"GNews retornó 0 resultados para query: {query}")
+                    source_failed = True
+            except Exception as e:
+                logger.error(f"Error en GNews: {e}")
+                source_failed = True
+
+        # 3. Fallback a NewsData.io
+        if self.newsdata_api_key and (source_failed or not articles):
             logger.info("Intentando fallback a NewsData.io...")
             try:
                 articles = await self._fetch_from_newsdata(query)
@@ -139,6 +156,49 @@ class NewsFetcher:
                 "published_at": self._parse_date(article.get("pubDate")),
                 "language": article.get("language", "es"),
                 "country": ",".join(article.get("country", [])) if article.get("country") else None,
+            })
+        return normalized
+
+    async def _fetch_from_gnews(self, query: Optional[str] = None) -> list[dict]:
+        """Obtiene noticias de GNews API."""
+        params = {
+            "token": self.gnews_api_key,
+            "q": query or "Venezuela Maduro",
+            "lang": "es",
+            "max": 10,  # Free tier limit per request
+            "sortby": "publishedAt",
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(self.GNEWS_BASE_URL, params=params)
+
+            if response.status_code == 403:
+                logger.warning("GNews API: Límite de requests alcanzado (100/día)")
+                raise Exception("GNews rate limit reached")
+
+            if response.status_code != 200:
+                logger.error(f"GNews response: {response.status_code} - {response.text[:500]}")
+                response.raise_for_status()
+
+            data = response.json()
+            articles = data.get("articles", [])
+            return self._normalize_gnews_articles(articles)
+
+    def _normalize_gnews_articles(self, articles: list[dict]) -> list[dict]:
+        """Normaliza artículos de GNews al formato interno."""
+        normalized = []
+        for article in articles:
+            normalized.append({
+                "external_id": article.get("url", ""),
+                "title": article.get("title", ""),
+                "description": article.get("description"),
+                "content": article.get("content"),
+                "url": article.get("url", ""),
+                "image_url": article.get("image"),
+                "source_name": article.get("source", {}).get("name"),
+                "published_at": self._parse_date(article.get("publishedAt")),
+                "language": "es",
+                "country": None,
             })
         return normalized
 
